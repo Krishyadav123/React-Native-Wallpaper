@@ -6,7 +6,7 @@ import {
   TextInput,
   View,
 } from "react-native";
-import React, { useEffect } from "react";
+import React, { useCallback, useEffect, useRef } from "react";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather, FontAwesome6, Ionicons } from "@expo/vector-icons";
 import { hp, wp } from "../../helpers/common";
@@ -14,7 +14,10 @@ import { theme } from "../../constants/theme";
 import Categories from "../../components/categories";
 import { apiCall } from "../../api";
 import ImagesGrid from "../../components/imagesGrid";
+import { debounce } from "lodash";
+import FiltersModal from "../../components/filtersModal";
 
+var page = 1;
 const HomeScreen = () => {
   const { top } = useSafeAreaInsets();
   const paddingTop = top > 0 ? top + 10 : 30;
@@ -22,27 +25,69 @@ const HomeScreen = () => {
   const [activeCategory, setActiveCategory] = React.useState(null);
   const searchInputRef = React.useRef(null);
   const [images, setImages] = React.useState([]);
+  const modalRef = useRef(null);
 
   useEffect(() => {
     fetchImages();
-  }, [search]);
+  }, []);
 
-  const fetchImages = async (params={page: 1}, append=true) => {
-        let res = await apiCall(params);
-        // console.log("got result: ", res.data?.hits[0]);
-        if(res.success && res.data?.hits) {
-            if(append) {
-                setImages([...images, ...res.data.hits])
-            }
-            else{
-                setImages(res.data.hits)
-            }
-        }
-  }
+  const fetchImages = async (params = { page: 1 }, append = false) => {
+    console.log("params: ", params, append);
+    let res = await apiCall(params);
+    // console.log("got result: ", res.data?.hits[0]);
+    if (res.success && res?.data?.hits) {
+      if (append) {
+        setImages([...images, ...res.data.hits]);
+      } else {
+        setImages(res.data.hits);
+      }
+    }
+  };
+
+  const openFiltersModal = () => {
+    modalRef?.current?.present();
+  };
+
+  const closeFiltersModal = () => {
+    modalRef?.current?.close();
+  };
 
   const handleChangeCategory = (cat) => {
-      setActiveCategory(cat);
-  }
+    setActiveCategory(cat);
+    clearSearch();
+    setImages([]);
+    page = 1;
+    let params = {
+      page,
+    }
+    if(cat) params.category = cat;
+    fetchImages(params, false);
+  };
+
+  const handleSearch = (text) => {
+    setSearch(text);
+    if (text.length > 2) {
+      page = 1;
+      setImages([]);
+      setActiveCategory(null);
+      fetchImages({ page, q: text }, false);
+    }
+
+    if (text == "") {
+      page = 1;
+      searchInputRef.current.clear();
+      setImages([]);
+      setActiveCategory(null);
+      fetchImages({ page }, false);
+    }
+  };
+
+  const clearSearch = () => {
+    setSearch("");
+    searchInputRef.current.clear();
+  };
+
+  const handleTextDebounce = useCallback(debounce(handleSearch, 400), []);
 
   console.log("activeCategory", activeCategory);
   return (
@@ -52,7 +97,7 @@ const HomeScreen = () => {
         <Pressable>
           <Text style={styles.title}>Pixels</Text>
         </Pressable>
-        <Pressable>
+        <Pressable onPress={openFiltersModal}>
           <FontAwesome6
             name="bars-staggered"
             size={22}
@@ -70,33 +115,33 @@ const HomeScreen = () => {
           <TextInput
             placeholder="Search for photos..."
             style={styles.searchInput}
-            value={search}
+            // value={search}
             ref={searchInputRef}
-            onChangeText={value => setSearch(value)}
+            onChangeText={handleTextDebounce}
           />
-          {
-            search && (
-              <Pressable style={styles.closeIcon} onPress={() => setSearch('')}>
-                <Ionicons name="close" size={24} color={theme.colors.neutal(0.6)} />
-              </Pressable>
-            )
-          }
+          {search && (
+            <Pressable onPress={()=> handleSearch("")} style={styles.closeIcon}>
+              <Ionicons
+                name="close"
+                size={24}
+                color={theme.colors.neutal(0.6)}
+              />
+            </Pressable>
+          )}
         </View>
 
         {/* categories */}
         <View style={styles.categories}>
-          <Categories activeCategory={activeCategory} 
-          handleChangeCategory={handleChangeCategory}
+          <Categories
+            activeCategory={activeCategory}
+            handleChangeCategory={handleChangeCategory}
           />
         </View>
 
         {/* images masonry grid */}
-          <View>
-            {
-              images.length > 0 && <ImagesGrid images={images} />
-            }
-          </View>
+        <View>{images.length > 0 && <ImagesGrid images={images} />}</View>
       </ScrollView>
+      <FiltersModal modalRef={modalRef}/>
     </View>
   );
 };
