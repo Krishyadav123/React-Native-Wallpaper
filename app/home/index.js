@@ -25,6 +25,7 @@ const HomeScreen = () => {
   const [activeCategory, setActiveCategory] = React.useState(null);
   const searchInputRef = React.useRef(null);
   const [images, setImages] = React.useState([]);
+  const [filters, setFilters] = React.useState(null);
   const modalRef = useRef(null);
 
   useEffect(() => {
@@ -51,6 +52,16 @@ const HomeScreen = () => {
   const closeFiltersModal = () => {
     modalRef?.current?.close();
   };
+
+  const applyFilters = (filters) => {
+    console.log("applying filters: ", filters);
+    closeFiltersModal();
+  }
+
+  const resetFilters = (filters) => {
+    console.log("reset filters: ", filters);
+    closeFiltersModal();
+  }
 
   const handleChangeCategory = (cat) => {
     setActiveCategory(cat);
