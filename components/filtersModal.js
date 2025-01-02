@@ -1,18 +1,19 @@
-import { StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import React, { useMemo } from "react";
 import { BlurView } from "expo-blur";
 import { BottomSheetModal, BottomSheetView } from "@gorhom/bottom-sheet";
 import Animated, {
   Extrapolation,
+  FadeInDown,
   interpolate,
   useAnimatedStyle,
 } from "react-native-reanimated";
 import { capitalize, hp } from "../helpers/common";
 import { theme } from "../constants/theme";
-import SectionView, { CommonFilterRows } from "./filterViews";
+import { ColorFilter, CommonFilterRows, SectionView } from "./filterViews";
 import { data } from "../constants/data";
 
-const FiltersModal = ({ modalRef }) => {
+export const FilterModal = ({ modalRef, onClose, onApply, onReset, filters, setFilters }) => {
   const snapPoints = useMemo(() => ["75%"], []);
 
   return (
@@ -27,20 +28,39 @@ const FiltersModal = ({ modalRef }) => {
       <BottomSheetView style={styles.contentContainer}>
         <View style={styles.content}>
           <Text style={styles.filterText}>Filters</Text>
-          {
-            Object.keys(sections).map((sectionName, index) => {
-              let sectionView = sections[sectionName];
-              let sectionData = data
-              let title = capitalize(sectionName);
-              return (
-                <View key={sectionName} >
-                  <SectionView title={title} 
-                  content={sectionView({data: sectionData})}
-                  />
-                </View>
-              )
-            })
-          }
+          {Object.keys(sections).map((sectionName, index) => {
+            let sectionView = sections[sectionName];
+            const sectionData = data.filters?.[sectionName] || [];
+            let title = capitalize(sectionName);
+            return (
+              <Animated.View
+              entering={FadeInDown.delay((index * 100)+100).springify().damping(11)}
+               key={sectionName}>
+                <SectionView
+                  title={title}
+                  content={sectionView({
+                    data: sectionData,
+                     filters,
+                     setFilters,
+                     filterName: sectionName
+                  })}
+                />
+              </Animated.View>
+            );
+          })}
+
+          {/* Actions */}
+          <Animated.View
+          entering={FadeInDown.delay(500).springify().damping(11)}
+          style={styles.button}>
+            <Pressable onPress={onReset} style={styles.resetButton}>
+              <Text style={[styles.ButtonText, { color: theme.colors.neutal(0.9)}]}>Reset</Text>
+            </Pressable>
+            <Pressable onPress={onApply} style={styles.applayButton}>
+              <Text style={[styles.ButtonText, { color: theme.colors.white}]}>Apply</Text>
+            </Pressable>
+          </Animated.View>
+
         </View>
       </BottomSheetView>
     </BottomSheetModal>
@@ -51,9 +71,8 @@ const sections = {
   "order": (props) => <CommonFilterRows {...props} />,
   "orientation": (props) => <CommonFilterRows {...props} />,
   "type": (props) => <CommonFilterRows {...props} />,
-  "colors": (props) => <CommonFilterRows {...props} />,
+  "colors": (props) => <ColorFilter {...props} />,
 };
-
 
 const CustomBackdrop = ({ animatedIndex, style }) => {
   const containerAnimatedStyle = useAnimatedStyle(() => {
@@ -109,6 +128,40 @@ const styles = StyleSheet.create({
     color: theme.colors.neutal(0.9),
     marginBottom: 5,
   },
+  button: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10
+  },
+  applayButton: {
+    flex: 1,
+    padding: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 14,
+    // backgroundColor: t,
+    borderRadius: 14,
+    backgroundColor: theme.colors.neutal(0.8),
+    borderCurve: "continuous",
+  },
+  resetButton: {
+    flex: 1,
+    padding: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 14,
+    // backgroundColor: t,
+    borderRadius: 14,
+    backgroundColor: theme.colors.neutal(0.03),
+    borderCurve: "continuous",
+    borderWidth: 2,
+    borderColor: theme.colors.grayBG
+  },
+  ButtonText: {
+    fontSize: hp(2.2),
+    // fontWeight: theme.fontWeights.semiBold,
+  },
 });
 
-export default FiltersModal;
+

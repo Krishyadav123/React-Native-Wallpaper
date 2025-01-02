@@ -4,7 +4,7 @@ import { Image } from 'expo-image'
 import { getImageSize, wp } from '../helpers/common'
 import { theme } from '../constants/theme'
 
-const ImageCard = ({item, index, columns}) => {
+const ImageCard = ({item, index, columns, router}) => {
 
     const isLastInRow = () => {
         return (index + 1) % columns === 0
@@ -15,7 +15,7 @@ const ImageCard = ({item, index, columns}) => {
         return {height: getImageSize(height, width)}
     }
   return (
-    <Pressable style={[styles.imageWrapper, !isLastInRow() && styles.spacing]}>
+    <Pressable onPress={() => router.push({ pathname: "home/image", params: {...item} })} style={[styles.imageWrapper, !isLastInRow() && styles.spacing]}>
         <Image
        style={[styles.Image, getImageHeight()]}
         source={item?.webformatURL} 

@@ -40,6 +40,8 @@ const filters = {
     ]
 }
 
+
 export const data = {
-    categories
+    categories,
+    filters
 };
